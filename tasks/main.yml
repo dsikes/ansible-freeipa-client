@@ -234,6 +234,7 @@
 
 - name: Joining the FreeIPA Domain...
   shell: |
+    set -o pipefail
     echo 'yes' | ipa-client-install \
     --no-ntp \
     --no-dns-sshfp \
