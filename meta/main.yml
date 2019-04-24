@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  role_name: freeipa-client
+  role_name: freeipa_client
   author: "Rich Nason"
   description: "Role to install FreeIPA Client on RHEL|CentOS|Debian|Ubuntu"
   company: "Atlantean Enterprises LLC"

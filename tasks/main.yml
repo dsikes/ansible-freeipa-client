@@ -96,15 +96,29 @@
     msg: "{{ etchostname_details.stdout_lines }}"
 
 # Add FQDN for this host to /etc/hosts
+# - name: Setting hostname FQDN in /etc/hosts...
+#   lineinfile:
+#     path: /etc/hosts
+#     line: "{{ ansible_default_ipv4.address }}    {{ local_hostname }}.{{ domain }} {{ local_hostname }}"
+
 - name: Setting hostname FQDN in /etc/hosts...
   lineinfile:
-    path: /etc/hosts
+    dest: /etc/hosts
+    state: present
+    regexp: "^{{ ansible_default_ipv4.address }}    {{ local_hostname }}.{{ domain }} {{ local_hostname }}"
     line: "{{ ansible_default_ipv4.address }}    {{ local_hostname }}.{{ domain }} {{ local_hostname }}"
 
 # Add IPA server to the /etc/hosts file
+# - name: Setting {{ ipa_server }} FQDN to /etc/hosts...
+#   lineinfile:
+#     path: /etc/hosts
+#     line: "{{ ipa_server_ipaddress }}   {{ ipa_server_hostname }}.{{ domain }}"
+
 - name: Setting {{ ipa_server }} FQDN to /etc/hosts...
   lineinfile:
-    path: /etc/hosts
+    dest: /etc/hosts
+    state: present
+    regexp: "^{{ ipa_server_ipaddress }}   {{ ipa_server_hostname }}.{{ domain }}"
     line: "{{ ipa_server_ipaddress }}   {{ ipa_server_hostname }}.{{ domain }}"
 
 - name: Verifying /etc/hosts changes...
@@ -167,8 +181,15 @@
   lineinfile:
     dest: /etc/resolv.conf
     state: present
-    regexp: '^nameserver='
-    line: 'nameserver={{ ipa_server_ipaddress }}'
+    regexp: '^nameserver '
+    line: 'nameserver {{ ipa_server_ipaddress }}'
+
+- name: Reconfiguring /etc/resolv.conf to set {{ domain }} as search domain...
+  lineinfile:
+    dest: /etc/resolv.conf
+    state: present
+    regexp: '^search '
+    line: 'search {{ domain }}'
 
 - name: Verifying /etc/resolv.conf changes...
   command: cat /etc/resolv.conf
