@@ -1,0 +1,5 @@
+---
+- hosts: linux-hosts
+  become: true
+  roles:
+    - clusterfrak.freeipa-client

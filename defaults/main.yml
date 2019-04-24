@@ -1,0 +1,7 @@
+---
+local_hostname: "{{ lookup('env','HOSTNAME') | default('localhost',true) }}"
+ipa_server_hostname: "{{ lookup('env','IPASERVER_HOSTNAME') | default('ipa',true) }}"
+ipa_server_ipaddress: "{{ lookup('env','IPASERVER_IPADDRESS') | default('1.2.3.4',true) }}"
+domain: "{{ lookup('env','DOMAIN') | default('mydomain.local',true) }}"
+ipa_join_user: "{{ lookup('env','IPA_JOIN_USER') | default('admin',true) }}"
+ipa_join_password: "{{ lookup('env','IPA_JOIN_PASS') | default('Fr33IPA#DS#Admin',true) }}"

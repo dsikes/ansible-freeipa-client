@@ -1,0 +1,252 @@
+---
+# =====================================
+# AWS Environment Check
+# =====================================
+- name: Checking if runtime environment is AWS...
+  uri:
+    url: http://169.254.169.254/latest/meta-data
+    timeout: 2
+  register: aws_uri_check
+  ignore_errors: yes
+
+- name: "AWS Response:"
+  debug:
+    msg:
+      - "Response Code: {{ aws_uri_check.status }} --> {{ aws_uri_check.msg }}"
+
+- name: Setting is_aws flag value...
+  set_fact:
+    is_aws: "{{ aws_uri_check.status == 200 }}"
+  when: aws_uri_check.status == 200
+
+- name: "{{ 'EnvironmentType: AWS' if is_aws else 'EnvironmentType: Non-AWS' }}"
+  debug:
+    msg:
+      - "AWS Environment check returned: {{ aws_uri_check.status }}"
+      - "is_aws flag set to: {{ 'True' if aws_uri_check.status == 200 else 'False'  }}"
+
+# =====================================
+# Firewalld Service Check
+# =====================================
+- name: Gathering list of all installed packages...
+  package_facts:
+    manager: auto
+
+- name: Checking if firewalld is installed...
+  set_fact:
+    is_firewalld: "{{ 'firewalld' in ansible_facts.packages }}"
+  when: '"firewalld" in ansible_facts.packages'
+
+- name: "Firewalld State: {{ 'Installed' if is_firewalld else 'Not Installed' }}"
+  debug:
+    msg:
+      - "is_firewalld flag set to: {{ 'True' if 'firewalld' in ansible_facts.packages else 'False'  }}"
+
+# ======================================
+# FreeIPA Client Install and Domain Join
+# -------------------------------------
+# Install FreeIPA Client and Dependancy Packages
+# ======================================
+- name: Installing Epel Yum Repository...
+  yum:
+    name:
+      - epel-release
+    state: present
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+# Install IPA Client
+- name: Installing FreeIPA client package on {{ ansible_distribution }}...
+  yum:
+    name:
+      - ipa-client
+    state: present
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Installing FreeIPA client package on {{ ansible_distribution }}...
+  apt:
+    name:
+      - freeipa-client
+    state: present
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+# ----------------------
+# Configure Networking
+# ----------------------
+# Get EC2 Metadata
+# - ec2_metadata_facts:
+#   when: is_aws
+
+# Overwrite the /etc/hostname file with this hosts FQDN entry
+- name: Setting FQDN hostname in /etc/hostname...
+  shell: echo {{ local_hostname }}.{{ domain }} > /etc/hostname
+  args:
+    warn: False
+  register: etchostname_cmd
+  failed_when: "'FAILED' in etchostname_cmd.stderr"
+  changed_when: False
+
+- name: Verifying /etc/hostname changes...
+  command: cat /etc/hostname
+  register: etchostname_details
+  failed_when: "'FAILED' in etchostname_details.stderr"
+  changed_when: False
+
+- name: /etc/hostname
+  debug:
+    msg: "{{ etchostname_details.stdout_lines }}"
+
+# Add FQDN for this host to /etc/hosts
+- name: Setting hostname FQDN in /etc/hosts...
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ ansible_default_ipv4.address }}    {{ local_hostname }}.{{ domain }} {{ local_hostname }}"
+
+# Add IPA server to the /etc/hosts file
+- name: Setting {{ ipa_server }} FQDN to /etc/hosts...
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ ipa_server_ipaddress }}   {{ ipa_server_hostname }}.{{ domain }}"
+
+- name: Verifying /etc/hosts changes...
+  command: cat /etc/hosts
+  register: etchosts_details
+  failed_when: "'FAILED' in etchosts_details.stderr"
+  changed_when: False
+
+- name: /etc/hosts
+  debug:
+    msg: "{{ etchosts_details.stdout_lines }}"
+
+# CentOS|RHEL
+- name: Setting IPA DC to local DNS resolver on ifcfg-{{ ansible_default_ipv4.interface }}...
+  lineinfile:
+    dest: /etc/sysconfig/network-scripts/ifcfg-{{ ansible_default_ipv4.interface }}
+    state: present
+    regexp: '^DNS1='
+    line: 'DNS1={{ ipa_server_ipaddress }}'
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Setting {{ domain }} as local DNS search domain on ifcfg-{{ ansible_default_ipv4.interface }}...
+  lineinfile:
+    dest: /etc/sysconfig/network-scripts/ifcfg-{{ ansible_default_ipv4.interface }}
+    state: present
+    regexp: '^DOMAIN='
+    line: 'DOMAIN={{ domain }}'
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Verifying ifcfg-{{ ansible_default_ipv4.interface }} changes...
+  command: cat /etc/sysconfig/network-scripts/ifcfg-{{ ansible_default_ipv4.interface }}
+  register: ifcfg_details
+  failed_when: "'FAILED' in ifcfg_details.stderr"
+  changed_when: False
+
+- name: /etc/sysconfig/network-scripts/ifcfg-{{ ansible_default_ipv4.interface }}
+  debug:
+    msg: "{{ ifcfg_details.stdout_lines }}"
+
+# Debian|Ubuntu
+- name: Setting IPA DC to local DNS resolver in /etc/network/interfaces...
+  lineinfile:
+    dest: /etc/network/interfaces
+    state: present
+    regexp: '^dns-nameservers='
+    line: 'dns-nameservers={{ ipa_server_ipaddress }}'
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+- name: Verifying /etc/network/interfaces changes...
+command: cat /etc/network/interfaces
+register: etcinterfaces_details
+failed_when: "'FAILED' in etcinterfaces_details.stderr"
+changed_when: False
+
+- name: /etc/network/interfaces
+debug:
+  msg: "{{ etcinterfaces_details.stdout_lines }}"
+
+- name: Reconfiguring /etc/resolv.conf to use the FreeIPA server...
+  lineinfile:
+    dest: /etc/resolv.conf
+    state: present
+    regexp: '^nameserver='
+    line: 'nameserver={{ ipa_server_ipaddress }}'
+
+- name: Verifying /etc/resolv.conf changes...
+command: cat /etc/resolv.conf
+register: resolvconf_details
+failed_when: "'FAILED' in resolvconf_details.stderr"
+changed_when: False
+
+- name: /etc/resolv.conf
+debug:
+  msg: "{{ resolvconf_details.stdout_lines }}"
+
+# Restart the network service if not running in AWS
+- name: Checking if network service requires restart...
+  command: echo "The network service requires a restart!"
+  notify: Restart Networking Service
+  when: not is_aws
+
+# Restart Networking Service
+- name: Flushing pending Network Handler actions...
+  meta: flush_handlers # Force restart handlers to restart now instead of at end of playbook run.
+
+# ----------------------
+# Run FreeIPA Setup
+# ----------------------
+# Stat the named.conf and IPA default.conf file, if the file exists, then IPA is already configured.
+- name: Checking for previous FreeIPA installations...
+  stat: path=/etc/ipa/default.conf
+  register: ipa_config
+
+- name: "Searching for existing IPA config file /etc/ipa/default.conf:"
+  debug:
+    msg:
+      - "{{ 'FILE FOUND' if ipa_config.stat.exists else 'FILE NOT FOUND' }}"
+
+- name: Joining the FreeIPA Domain...
+  command: |
+    ipa-client-install \
+    --unattended \
+    --no-ntp \
+    --no-dns-sshfp \
+    --mkhomedir \
+    --enable-dns-updates \
+    --ssh-trust-dns \
+    --domain={{ domain }} \
+    --principal={{ ipa_join_user }}
+    --password={{ ipa_join_password }} \
+    --verbose
+  register: ipa_join
+  failed_when: "'FAILED' in ipa_join.stderr"
+  when: not ipa_config.stat.exists
+
+- name: "IPA Client Join State:"
+  debug:
+    msg:
+      - "{{ ipa_join.stdout }}"
+  when: not ipa_config.stat.exists
+
+# Remove password references if executed in AWS
+- name: Removing IPA_JOIN_USER references...
+  lineinfile:
+    dest: /etc/environment
+    state: absent
+    regexp: '^export IPA_JOIN_USER='
+  when: is_aws
+
+- name: Removing IPA_JOIN_PASS references...
+  lineinfile:
+    dest: /etc/environment
+    state: absent
+    regexp: '^export IPA_JOIN_PASS='
+  when: is_aws
+
+- name: Scrubbing Environment Variables...
+  shell: unset IPA_JOIN_USER && unset IPA_JOIN_PASS
+  args:
+    warn: False
+  register: unset_vars
+  failed_when: "'FAILED' in unset_vars.stderr"
+  changed_when: False
+  when: is_aws
+  ignore_errors: yes
