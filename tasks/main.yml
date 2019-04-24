@@ -154,14 +154,14 @@
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
 - name: Verifying /etc/network/interfaces changes...
-command: cat /etc/network/interfaces
-register: etcinterfaces_details
-failed_when: "'FAILED' in etcinterfaces_details.stderr"
-changed_when: False
+  command: cat /etc/network/interfaces
+  register: etcinterfaces_details
+  failed_when: "'FAILED' in etcinterfaces_details.stderr"
+  changed_when: False
 
 - name: /etc/network/interfaces
-debug:
-  msg: "{{ etcinterfaces_details.stdout_lines }}"
+  debug:
+    msg: "{{ etcinterfaces_details.stdout_lines }}"
 
 - name: Reconfiguring /etc/resolv.conf to use the FreeIPA server...
   lineinfile:
@@ -171,14 +171,14 @@ debug:
     line: 'nameserver={{ ipa_server_ipaddress }}'
 
 - name: Verifying /etc/resolv.conf changes...
-command: cat /etc/resolv.conf
-register: resolvconf_details
-failed_when: "'FAILED' in resolvconf_details.stderr"
-changed_when: False
+  command: cat /etc/resolv.conf
+  register: resolvconf_details
+  failed_when: "'FAILED' in resolvconf_details.stderr"
+  changed_when: False
 
 - name: /etc/resolv.conf
-debug:
-  msg: "{{ resolvconf_details.stdout_lines }}"
+  debug:
+    msg: "{{ resolvconf_details.stdout_lines }}"
 
 # Restart the network service if not running in AWS
 - name: Checking if network service requires restart...
