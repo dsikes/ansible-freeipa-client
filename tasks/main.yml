@@ -87,6 +87,8 @@
 
 - name: Verifying /etc/hostname changes...
   command: cat /etc/hostname
+  args:
+    warn: False
   register: etchostname_details
   failed_when: "'FAILED' in etchostname_details.stderr"
   changed_when: False
@@ -123,6 +125,8 @@
 
 - name: Verifying /etc/hosts changes...
   command: cat /etc/hosts
+  args:
+    warn: False
   register: etchosts_details
   failed_when: "'FAILED' in etchosts_details.stderr"
   changed_when: False
@@ -193,6 +197,8 @@
 
 - name: Verifying /etc/resolv.conf changes...
   command: cat /etc/resolv.conf
+  args:
+    warn: False
   register: resolvconf_details
   failed_when: "'FAILED' in resolvconf_details.stderr"
   changed_when: False
@@ -204,6 +210,8 @@
 # Restart the network service if not running in AWS
 - name: Checking if network service requires restart...
   command: echo "The network service requires a restart!"
+  args:
+    warn: False
   notify: Restart Networking Service
   when: not is_aws
 
@@ -225,7 +233,7 @@
       - "{{ 'FILE FOUND' if ipa_config.stat.exists else 'FILE NOT FOUND' }}"
 
 - name: Joining the FreeIPA Domain...
-  command: |
+  shell: |
     echo 'yes' | ipa-client-install \
     --no-ntp \
     --no-dns-sshfp \
@@ -236,7 +244,10 @@
     --unattended \
     --principal={{ ipa_join_user }} \
     --password='{{ ipa_join_password }}' \
+    --force-join \
     --verbose
+  args:
+    warn: False
   register: ipa_join
   failed_when: "'FAILED' in ipa_join.stderr"
   when: not ipa_config.stat.exists
