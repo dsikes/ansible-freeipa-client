@@ -226,16 +226,16 @@
 
 - name: Joining the FreeIPA Domain...
   command: |
-    ipa-client-install \
-    --unattended \
+    echo 'yes' | ipa-client-install \
     --no-ntp \
     --no-dns-sshfp \
     --mkhomedir \
     --enable-dns-updates \
     --ssh-trust-dns \
     --domain={{ domain }} \
-    --principal={{ ipa_join_user }}
-    --password={{ ipa_join_password }} \
+    --unattended \
+    --principal={{ ipa_join_user }} \
+    --password='{{ ipa_join_password }}' \
     --verbose
   register: ipa_join
   failed_when: "'FAILED' in ipa_join.stderr"
