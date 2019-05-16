@@ -8,7 +8,7 @@ This is just a dev repo for configuring a FreeIPA replica on CentOS 7.5
 ** NOTE: ** Be sure to set these to your own values. This is just a sample.
 
 ```
-export HOSTNAME="localhost"
+export HOSTNAME="localhost"   # Make this something meaningful, ie: "replica1" or "us-west2-replica1"
 export IPASERVER_HOSTNAME="ipa"
 export IPASERVER_IPADDRESS="1.2.3.4"
 export DOMAIN="mydomain.local"
