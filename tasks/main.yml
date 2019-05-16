@@ -143,22 +143,22 @@
 
 - name: Joining the FreeIPA Domain...
   shell: |
-  set -o pipefail
-  echo 'yes' | ipa-client-install --hostname=`hostname -f` \
-  --no-ntp \
-  --no-dns-sshfp \
-  --mkhomedir \
-  --enable-dns-updates \
-  --ssh-trust-dns \
-  --domain={{ domain }} \
-  --unattended \
-  --principal={{ ipa_join_user }} \
-  --password='{{ ipa_join_password }}' \
-  --force-join \
-  --verbose \
-  --server={{ipa_server_hostname}}.{{domain}} \
-  --domain={{ domain }} \
-  --realm {{ domain }}
+    set -o pipefail 
+    echo 'yes' | ipa-client-install --hostname=`hostname -f` \
+    --no-ntp \
+    --no-dns-sshfp \
+    --mkhomedir \
+    --enable-dns-updates \
+    --ssh-trust-dns \
+    --domain={{ domain }} \
+    --unattended \
+    --principal={{ ipa_join_user }} \
+    --password='{{ ipa_join_password }}' \
+    --force-join \
+    --verbose \
+    --server={{ipa_server_hostname}}.{{domain}} \
+    --domain={{ domain }} \
+    --realm {{ domain }}
   args:
     warn: False
   register: ipa_join
