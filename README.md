@@ -15,3 +15,13 @@ export DOMAIN="mydomain.local"
 export IPA_JOIN_USER="admin"
 export IPA_JOIN_PASS="SomeSuperSecretPassw0rd123"
 ```
+
+| Environment Variable | Description |
+| ------------- | ------------- |
+| HOSTNAME      | this is the hostname of the replica host |
+| IPASERVER_HOSTNAME | this is the hostname of the primary DC you wish to replicate |
+| IPASERVER_IPADDRESS | this is the ip address of the primary DC you wish to replicate |
+| DOMAIN | this is the domain you are joining |
+| IPA_JOIN_USER | this is the username you are using to auth the join request |
+| IPA_JOIN_PASS | this is the password you are using to auth the join request |
+
