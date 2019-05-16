@@ -173,8 +173,8 @@
 
 - name: Installing IPA Replica packages...
   shell: |
-  set -o pipefail
-  ipa-replica-install
+    set -o pipefail
+    ipa-replica-install
   args:
     warn: False
   register: ipa_replica_install
