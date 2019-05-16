@@ -1,5 +1,5 @@
 ---
-- hosts: linux-hosts
+- hosts: localhost
   become: true
   roles:
-    - clusterfrak.freeipa-client
+    - atlantean.freeipa-replica

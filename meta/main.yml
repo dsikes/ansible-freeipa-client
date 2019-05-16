@@ -1,8 +1,8 @@
 ---
 galaxy_info:
-  role_name: freeipa_client
-  author: "Rich Nason"
-  description: "Role to install FreeIPA Client on RHEL|CentOS|Debian|Ubuntu"
+  role_name: freeipa_replica
+  author: "Dan Sikes"
+  description: "Role to install FreeIPA replica on RHEL|CentOS"
   company: "Atlantean Enterprises LLC"
   license: "license (MIT, BSD)"
   min_ansible_version: 2.0
